@@ -1,0 +1,27 @@
+{
+  "name": "browserfs-webdav",
+  "version": "1.0.0",
+  "description": "WebDAV file system for BrowserFS",
+  "main": "dist/index.js",
+  "scripts": {
+    "test": "jest"
+  },
+  "author": "Marek Micek <mmmicek@happns.io>",
+  "license": "MIT",
+  "dependencies": {
+    "@types/node": "^14.0.13",
+    "browserfs": "^1.4.3",
+    "webdav-fs": "^2.0.0"
+  },
+  "devDependencies": {
+    "@types/jest": "^26.0.0",
+    "jest": "^26.0.1",
+    "ts-jest": "^26.1.0",
+    "ts-loader": "^7.0.5",
+    "typescript": "^3.9.5",
+    "uglifyjs-webpack-plugin": "^2.2.0",
+    "webdav-server": "^2.6.2",
+    "webpack": "^4.43.0",
+    "xmlhttprequest": "^1.8.0"
+  }
+}
