@@ -1,9 +1,8 @@
 import WebDAVFileSystem from './WebDAVFileSystem';
+import * as BrowserFS from 'browserfs';
 
-declare const window: any;
-
-if (window.BrowserFS) {
-    window.BrowserFS.registerFileSystem('WebDAVFileSystem', WebDAVFileSystem);
+if (typeof BrowserFS !== 'undefined') {
+    BrowserFS.registerFileSystem('WebDAV', WebDAVFileSystem);
 }
 
 export { WebDAVFileSystem };

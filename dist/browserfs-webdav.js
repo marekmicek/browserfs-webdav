@@ -94,8 +94,9 @@ exports.__esModule = true;
 exports.WebDAVFileSystem = void 0;
 var WebDAVFileSystem_1 = __webpack_require__(1);
 exports.WebDAVFileSystem = WebDAVFileSystem_1["default"];
-if (window.BrowserFS) {
-    window.BrowserFS.registerFileSystem('WebDAVFileSystem', WebDAVFileSystem_1["default"]);
+var BrowserFS = __webpack_require__(3);
+if (typeof BrowserFS !== 'undefined') {
+    BrowserFS.registerFileSystem('WebDAV', WebDAVFileSystem_1["default"]);
 }
 
 
@@ -163,9 +164,9 @@ var __spreadArrays = (this && this.__spreadArrays) || function () {
 };
 exports.__esModule = true;
 var file_system_1 = __webpack_require__(2);
-var api_error_1 = __webpack_require__(3);
-var node_fs_stats_1 = __webpack_require__(4);
-var WebDAV_1 = __webpack_require__(5);
+var api_error_1 = __webpack_require__(4);
+var node_fs_stats_1 = __webpack_require__(5);
+var WebDAV_1 = __webpack_require__(6);
 var propFind = function (url) { return __awaiter(void 0, void 0, void 0, function () {
     var doc;
     return __generator(this, function (_a) {
@@ -182,16 +183,38 @@ var propFind = function (url) { return __awaiter(void 0, void 0, void 0, functio
 }); };
 var WebDAVFileSystem = /** @class */ (function (_super) {
     __extends(WebDAVFileSystem, _super);
-    function WebDAVFileSystem(url, options) {
+    function WebDAVFileSystem(url) {
         var _this = _super.call(this) || this;
         _this.url = url;
+        if (!url && typeof document !== 'undefined') {
+            url = document.baseURI;
+        }
+        if (!url) {
+            throw 'Couln\'t determine an URL, please provide it in the options';
+        }
         if (url.slice(-1) !== '/') {
             throw new Error('URL should end with /');
         }
         return _this;
     }
+    WebDAVFileSystem.Create = function (opts, cb) {
+        var fs = new WebDAVFileSystem(opts.url);
+        cb(null, fs);
+    };
     WebDAVFileSystem.isAvailable = function () {
         return true;
+    };
+    WebDAVFileSystem.prototype.getName = function () {
+        return WebDAVFileSystem.Name;
+    };
+    WebDAVFileSystem.prototype.isReadOnly = function () {
+        return false;
+    };
+    WebDAVFileSystem.prototype.supportsProps = function () {
+        return false;
+    };
+    WebDAVFileSystem.prototype.supportsSynch = function () {
+        return false;
     };
     WebDAVFileSystem.prototype.writeFile = function (fname, data, encoding, flag, mode, cb) {
         WebDAV_1["default"].PUT(this.url + fname, data, cb);
@@ -240,6 +263,13 @@ var WebDAVFileSystem = /** @class */ (function (_super) {
     WebDAVFileSystem.prototype.mkdir = function (p, mode, cb) {
         WebDAV_1["default"].MKCOL(this.url + p, cb);
     };
+    WebDAVFileSystem.Name = 'WebDAV';
+    WebDAVFileSystem.Options = {
+        url: {
+            type: 'string',
+            description: 'The URL of the WebDAV endpoint.',
+        }
+    };
     return WebDAVFileSystem;
 }(file_system_1.BaseFileSystem));
 exports["default"] = WebDAVFileSystem;
@@ -253,15 +283,18 @@ exports["default"] = WebDAVFileSystem;
 
 exports.__esModule = true;
 exports.BaseFileSystem = void 0;
-var BaseFileSystem = Object.getPrototypeOf(window.BrowserFS.FileSystem.XmlHttpRequest);
+var BrowserFS = __webpack_require__(3);
+var BaseFileSystem = Object.getPrototypeOf(BrowserFS.FileSystem.XmlHttpRequest);
 exports.BaseFileSystem = BaseFileSystem;
+;
+;
 
 
 /***/ }),
 /* 3 */
 /***/ (function(module, exports) {
 
-module.exports = ApiError;
+module.exports = BrowserFS;
 
 /***/ }),
 /* 4 */
@@ -270,16 +303,11 @@ module.exports = ApiError;
 "use strict";
 
 exports.__esModule = true;
-exports.FileType = void 0;
-var FileType;
-(function (FileType) {
-    FileType[FileType["FILE"] = 32768] = "FILE";
-    FileType[FileType["DIRECTORY"] = 16384] = "DIRECTORY";
-    FileType[FileType["SYMLINK"] = 40960] = "SYMLINK";
-})(FileType = exports.FileType || (exports.FileType = {}));
-var fs = window.BrowserFS.BFSRequire('fs');
-var Stats = fs.FS.Stats;
-exports["default"] = Stats;
+exports.ErrorCode = exports.ApiError = void 0;
+var BrowserFS = __webpack_require__(3);
+var _a = BrowserFS.Errors, ApiError = _a.ApiError, ErrorCode = _a.ErrorCode;
+exports.ApiError = ApiError;
+exports.ErrorCode = ErrorCode;
 
 
 /***/ }),
@@ -289,8 +317,17 @@ exports["default"] = Stats;
 "use strict";
 
 exports.__esModule = true;
-var WebDAV_1 = __webpack_require__(6);
-exports["default"] = WebDAV_1["default"];
+exports.FileType = void 0;
+var BrowserFS = __webpack_require__(3);
+var FileType;
+(function (FileType) {
+    FileType[FileType["FILE"] = 32768] = "FILE";
+    FileType[FileType["DIRECTORY"] = 16384] = "DIRECTORY";
+    FileType[FileType["SYMLINK"] = 40960] = "SYMLINK";
+})(FileType = exports.FileType || (exports.FileType = {}));
+var fs = BrowserFS.BFSRequire('fs');
+var Stats = fs.FS.Stats;
+exports["default"] = Stats;
 
 
 /***/ }),
@@ -300,7 +337,18 @@ exports["default"] = WebDAV_1["default"];
 "use strict";
 
 exports.__esModule = true;
-var request_1 = __webpack_require__(7);
+var WebDAV_1 = __webpack_require__(7);
+exports["default"] = WebDAV_1["default"];
+
+
+/***/ }),
+/* 7 */
+/***/ (function(module, exports, __webpack_require__) {
+
+"use strict";
+
+exports.__esModule = true;
+var request_1 = __webpack_require__(8);
 exports["default"] = {
     GET: function (url, callback) {
         return request_1["default"]('GET', url, {}, null, 'text', callback);
@@ -321,7 +369,7 @@ exports["default"] = {
 
 
 /***/ }),
-/* 7 */
+/* 8 */
 /***/ (function(module, exports, __webpack_require__) {
 
 "use strict";

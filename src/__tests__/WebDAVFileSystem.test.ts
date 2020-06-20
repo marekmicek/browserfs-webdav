@@ -12,12 +12,17 @@ const testEndpoint = 'http://localhost:1900/';
 
 BrowserFS.install(window);
 
-// create WebDAV File System
-const webDav = new (BrowserFS.FileSystem as any).WebDAVFileSystem(testEndpoint);
-
-BrowserFS.initialize(webDav);
-
 const fs = BrowserFS.BFSRequire('fs');
+
+it('should allow to use BrowserFS.configure', async () => {
+    await new Promise((resolve, reject) => BrowserFS.configure({ fs: 'WebDAV', options: { url: testEndpoint } }, function (err) {
+        if (err) {
+            reject(err);
+        } else {
+            resolve();
+        }
+    }));
+});
 
 it('should read the file', async () => {
     const expected = 'TEST CONTENT';
