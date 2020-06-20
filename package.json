@@ -11,11 +11,14 @@
   "dependencies": {
     "@types/node": "^14.0.13",
     "browserfs": "^1.4.3",
+    "txml": "^3.1.3",
     "webdav-fs": "^2.0.0"
   },
   "devDependencies": {
     "@types/jest": "^26.0.0",
     "jest": "^26.0.1",
+    "node-fetch": "^2.6.0",
+    "terser-webpack-plugin": "^3.0.6",
     "ts-jest": "^26.1.0",
     "ts-loader": "^7.0.5",
     "typescript": "^3.9.5",

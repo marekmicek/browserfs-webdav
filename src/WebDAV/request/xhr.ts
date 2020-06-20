@@ -2,18 +2,20 @@ export default function (verb, url, headers, data, type, callback) {
     var xhr = new XMLHttpRequest();
     var body = function () {
         var b: any = xhr.responseText;
-        if (type == 'xml') {
-            var xml = xhr.responseXML;
+        // if (type == 'xml') {
+        //     var xml = xhr.responseXML;
 
-            if (!xml) {
-                const parser = new DOMParser();
-                xml = parser.parseFromString(b, 'text/xml');
-            }
+        //     if (!xml) {
 
-            if (xml) {
-                b = xml.firstChild.nextSibling ? xml.firstChild.nextSibling : xml.firstChild;
-            }
-        }
+        //         return
+        //         const parser = new DOMParser();
+        //         xml = parser.parseFromString(b, 'text/xml');
+        //     }
+
+        //     if (xml) {
+        //         b = xml.firstChild.nextSibling ? xml.firstChild.nextSibling : xml.firstChild;
+        //     }
+        // }
 
         return b;
     };

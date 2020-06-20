@@ -7,17 +7,21 @@ import Stats, { FileType } from 'browserfs/dist/node/core/node_fs_stats';
 import WebDAV from './WebDAV';
 
 const propFind = async url => {
-    const doc = await WebDAV.PROPFIND(url);
+    const response = await WebDAV.PROPFIND(url);
 
-    if (doc.childNodes == null) {
+    if (!response) {
         throw new ApiError(ErrorCode.ENOENT);
     }
 
-    return doc;
+    return response;
 }
 
 declare interface WebDAVOptions {
     url: string
+}
+
+const combinePaths = (...paths) => {
+    return paths.map(path => path.replace(/^\/?(.*?)\/?$/, '$1')).join('/');
 }
 
 export default class WebDAVFileSystem extends BaseFileSystem implements FileSystem {
@@ -72,48 +76,44 @@ export default class WebDAVFileSystem extends BaseFileSystem implements FileSyst
     }
 
     public writeFile(fname: string, data: any, encoding: string | null, flag: FileFlag, mode: number, cb: BFSOneArgCallback): void {
-        WebDAV.PUT(this.url + fname, data, cb);
+        WebDAV.PUT(combinePaths(this.url, fname), data, cb);
     }
 
     public readFile(fname: string, encoding: string | null, flag: FileFlag, cb: BFSCallback<string | Buffer>): void {
-        WebDAV.GET(this.url + fname, cb);
+        WebDAV.GET(combinePaths(this.url, fname), cb);
     }
 
     public readdir(p: string, cb: BFSCallback<string[]>): void {
-        propFind(this.url + p).then(doc => {
-            const contents = [...doc.childNodes]
-                .map(node => node.getElementsByTagName('D:displayname')[0].textContent)
-                .filter(name => name.length);
+        propFind(combinePaths(this.url, p)).then((response: any)=> {
+            if (!response.length) {
+                cb(null, []);
+
+                return;
+            }
+
+            const contents = (response as [])
+            .map((item: any) => item.propstat.prop.displayname)
+            .slice(1);
 
             cb(null, contents);
         });
     };
 
     public stat(p: string, isLstat: boolean | null, cb: BFSCallback<Stats>): void {
-        propFind(this.url + p).then(entry => {
+        propFind(combinePaths(this.url, p)).then(response => {
 
-            let self;
+            let self = response[0] || response;
 
-            if (entry.childNodes.length > 1) {
-                const contents = [...entry.childNodes]
-                    .map(node => ({
-                        name: node.getElementsByTagName('D:displayname')[0].textContent,
-                        node
-                    }))
+            const prop = self.propstat.prop;
 
-                self = contents[0].node;
-            } else {
-                self = entry;
-            }
-
-            const isDirectory = self.getElementsByTagName('D:collection').length;
+            const isDirectory = prop.resourcetype && 'collection' in prop.resourcetype;
 
             const itemType: FileType = isDirectory ? FileType.DIRECTORY : FileType.FILE;
-            const size = parseInt(entry.getElementsByTagName('D:getcontentlength')[0].textContent);
+            const size = parseInt(prop.getcontentlength);
             const mode = 777;
             const atime = undefined;
-            const mtime = new Date(entry.getElementsByTagName('D:getlastmodified')[0].textContent);
-            const ctime = new Date(entry.getElementsByTagName('D:creationdate')[0].textContent);
+            const mtime = new Date(prop.getlastmodified);
+            const ctime = new Date(prop.creationdate);
 
             const stats = new Stats(itemType, size, mode, atime, mtime, ctime);
 
@@ -122,14 +122,14 @@ export default class WebDAVFileSystem extends BaseFileSystem implements FileSyst
     }
 
     public unlink(p: string, cb: BFSOneArgCallback): void {
-        WebDAV.DELETE(this.url + p, cb);
+        WebDAV.DELETE(combinePaths(this.url, p), cb);
     }
 
     public rmdir(p: string, cb: BFSOneArgCallback): void {
-        WebDAV.DELETE(this.url + p, cb);
+        WebDAV.DELETE(combinePaths(this.url, p), cb);
     }
 
     public mkdir(p: string, mode: number, cb: BFSOneArgCallback): void {
-        WebDAV.MKCOL(this.url + p, cb);
+        WebDAV.MKCOL(combinePaths(this.url, p), cb);
     }
 }

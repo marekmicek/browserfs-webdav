@@ -1,8 +1,11 @@
 import * as BrowserFS from 'browserfs';
 import { XMLHttpRequest } from 'xmlhttprequest';
 
+import fetch from 'node-fetch';
+
 window.XMLHttpRequest = XMLHttpRequest;
 window.BrowserFS = BrowserFS;
+window.fetch = fetch;
 
 import '..';
 
