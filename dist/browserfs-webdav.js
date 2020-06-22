@@ -159,7 +159,8 @@ exports.__esModule = true;
 var file_system_1 = __webpack_require__(2);
 var api_error_1 = __webpack_require__(4);
 var node_fs_stats_1 = __webpack_require__(5);
-var WebDAV_1 = __webpack_require__(6);
+var auth = __webpack_require__(6);
+var WebDAV_1 = __webpack_require__(7);
 var propFind = function (url) { return __awaiter(void 0, void 0, void 0, function () {
     var response;
     return __generator(this, function (_a) {
@@ -181,11 +182,27 @@ var combinePaths = function () {
     }
     return paths.map(function (path) { return path.replace(/^\/?(.*?)\/?$/, '$1'); }).join('/');
 };
+var mapHttpErrorToApiError = function (err) {
+    switch (err.status) {
+        case 401: return new api_error_1.ApiError(api_error_1.ErrorCode.EACCES);
+        case 404: return new api_error_1.ApiError(api_error_1.ErrorCode.ENOENT);
+    }
+    return err;
+};
+var mapHttpErrorCallback = function (cb) { return function (err, data) {
+    if (err) {
+        cb(mapHttpErrorToApiError(err));
+        return;
+    }
+    cb(err, data);
+}; };
 var WebDAVFileSystem = /** @class */ (function (_super) {
     __extends(WebDAVFileSystem, _super);
-    function WebDAVFileSystem(url) {
+    function WebDAVFileSystem(url, token) {
         var _this = _super.call(this) || this;
         _this.url = url;
+        _this.token = token;
+        _this.headers = {};
         if (!url && typeof document !== 'undefined') {
             url = document.baseURI;
         }
@@ -194,6 +211,13 @@ var WebDAVFileSystem = /** @class */ (function (_super) {
         }
         if (url.slice(-1) !== '/') {
             throw new Error('URL should end with /');
+        }
+        if (token) {
+            Object.defineProperty(_this.headers, 'Authorization', {
+                get: function () { return auth.generateTokenAuthHeader(token); },
+                configurable: true,
+                enumerable: true
+            });
         }
         return _this;
     }
@@ -217,26 +241,35 @@ var WebDAVFileSystem = /** @class */ (function (_super) {
         return false;
     };
     WebDAVFileSystem.prototype.writeFile = function (fname, data, encoding, flag, mode, cb) {
-        WebDAV_1["default"].PUT(combinePaths(this.url, fname), data, cb);
+        WebDAV_1["default"].PUT.bind(this)(combinePaths(this.url, fname), data, mapHttpErrorCallback(cb));
     };
     WebDAVFileSystem.prototype.readFile = function (fname, encoding, flag, cb) {
-        WebDAV_1["default"].GET(combinePaths(this.url, fname), cb);
+        WebDAV_1["default"].GET.bind(this)(combinePaths(this.url, fname), mapHttpErrorCallback(cb));
     };
     WebDAVFileSystem.prototype.readdir = function (p, cb) {
-        propFind(combinePaths(this.url, p)).then(function (response) {
+        propFind.bind(this)(combinePaths(this.url, p)).then(function (response) {
             if (!response.length) {
                 cb(null, []);
                 return;
             }
+            var mapToDisplayName = function (item) {
+                var _a;
+                var _b, _c;
+                var displayName = (_c = (_b = item.propstat) === null || _b === void 0 ? void 0 : _b.prop) === null || _c === void 0 ? void 0 : _c.displayname;
+                if (!displayName) {
+                    _a = item.href.match(/.+\/(.+)\/?$/), displayName = _a[1];
+                }
+                return displayName;
+            };
             var contents = response
-                .map(function (item) { return item.propstat.prop.displayname; })
+                .map(function (item) { return mapToDisplayName(item); })
                 .slice(1);
             cb(null, contents);
-        });
+        }, function (err) { return cb(mapHttpErrorToApiError(err)); });
     };
     ;
     WebDAVFileSystem.prototype.stat = function (p, isLstat, cb) {
-        propFind(combinePaths(this.url, p)).then(function (response) {
+        propFind.bind(this)(combinePaths(this.url, p)).then(function (response) {
             var self = response[0] || response;
             var prop = self.propstat.prop;
             var isDirectory = prop.resourcetype && 'collection' in prop.resourcetype;
@@ -248,16 +281,16 @@ var WebDAVFileSystem = /** @class */ (function (_super) {
             var ctime = new Date(prop.creationdate);
             var stats = new node_fs_stats_1["default"](itemType, size, mode, atime, mtime, ctime);
             cb(null, stats);
-        });
+        }, function (err) { return cb(mapHttpErrorToApiError(err)); });
     };
     WebDAVFileSystem.prototype.unlink = function (p, cb) {
-        WebDAV_1["default"].DELETE(combinePaths(this.url, p), cb);
+        WebDAV_1["default"].DELETE.bind(this)(combinePaths(this.url, p), mapHttpErrorCallback(cb));
     };
     WebDAVFileSystem.prototype.rmdir = function (p, cb) {
-        WebDAV_1["default"].DELETE(combinePaths(this.url, p), cb);
+        WebDAV_1["default"].DELETE.bind(this)(combinePaths(this.url, p), mapHttpErrorCallback(cb));
     };
     WebDAVFileSystem.prototype.mkdir = function (p, mode, cb) {
-        WebDAV_1["default"].MKCOL(combinePaths(this.url, p), cb);
+        WebDAV_1["default"].MKCOL.bind(this)(combinePaths(this.url, p), mapHttpErrorCallback(cb));
     };
     WebDAVFileSystem.Name = 'WebDAV';
     WebDAVFileSystem.Options = {
@@ -328,13 +361,58 @@ exports["default"] = Stats;
 
 /***/ }),
 /* 6 */
-/***/ (function(module, exports, __webpack_require__) {
+/***/ (function(module, __webpack_exports__, __webpack_require__) {
 
 "use strict";
+__webpack_require__.r(__webpack_exports__);
+/* harmony export (binding) */ __webpack_require__.d(__webpack_exports__, "generateBasicAuthHeader", function() { return generateBasicAuthHeader; });
+/* harmony export (binding) */ __webpack_require__.d(__webpack_exports__, "generateDigestAuthHeader", function() { return generateDigestAuthHeader; });
+/* harmony export (binding) */ __webpack_require__.d(__webpack_exports__, "generateTokenAuthHeader", function() { return generateTokenAuthHeader; });
+function generateBasicAuthHeader(username, password) {
+  const encoded = btoa(`${username}:${password}`);
+  return `Basic ${encoded}`;
+}
 
-exports.__esModule = true;
-var WebDAV_1 = __webpack_require__(7);
-exports["default"] = WebDAV_1["default"];
+function generateDigestAuthHeader(options, digest) {
+  const url = options.url.replace("//", "");
+  const uri = url.indexOf("/") == -1 ? "/" : url.slice(url.indexOf("/"));
+  const method = options.method ? options.method.toUpperCase() : "GET";
+  const qop = /(^|,)\s*auth\s*($|,)/.test(digest.qop) ? "auth" : false;
+  const ncString = `00000000${digest.nc}`.slice(-8);
+  const cnonce = digest.cnonce;
+  const ha1 = ha1Compute(digest.algorithm, digest.username, digest.realm, digest.password, digest.nonce, digest.cnonce);
+  const ha2 = md5(`${method}:${uri}`);
+  const digestResponse = qop ? md5(`${ha1}:${digest.nonce}:${ncString}:${digest.cnonce}:${qop}:${ha2}`) : md5(`${ha1}:${digest.nonce}:${ha2}`);
+  const authValues = {
+    username: digest.username,
+    realm: digest.realm,
+    nonce: digest.nonce,
+    uri,
+    qop,
+    response: digestResponse,
+    nc: ncString,
+    cnonce: digest.cnonce,
+    algorithm: digest.algorithm,
+    opaque: digest.opaque
+  };
+  const authHeader = [];
+
+  for (var k in authValues) {
+    if (authValues[k]) {
+      if (k === "qop" || k === "nc" || k === "algorithm") {
+        authHeader.push(`${k}=${authValues[k]}`);
+      } else {
+        authHeader.push(`${k}="${authValues[k]}"`);
+      }
+    }
+  }
+
+  return `Digest ${authHeader.join(", ")}`;
+}
+
+function generateTokenAuthHeader(tokenInfo) {
+  return `${tokenInfo.token_type} ${tokenInfo.access_token}`;
+}
 
 
 /***/ }),
@@ -344,14 +422,38 @@ exports["default"] = WebDAV_1["default"];
 "use strict";
 
 exports.__esModule = true;
-var txml_1 = __webpack_require__(8);
-var request_1 = __webpack_require__(11);
+var WebDAV_1 = __webpack_require__(8);
+exports["default"] = WebDAV_1["default"];
+
+
+/***/ }),
+/* 8 */
+/***/ (function(module, exports, __webpack_require__) {
+
+"use strict";
+
+var __assign = (this && this.__assign) || function () {
+    __assign = Object.assign || function(t) {
+        for (var s, i = 1, n = arguments.length; i < n; i++) {
+            s = arguments[i];
+            for (var p in s) if (Object.prototype.hasOwnProperty.call(s, p))
+                t[p] = s[p];
+        }
+        return t;
+    };
+    return __assign.apply(this, arguments);
+};
+exports.__esModule = true;
+var txml_1 = __webpack_require__(9);
+var request_1 = __webpack_require__(12);
 exports["default"] = {
+    headers: {},
     GET: function (url, callback) {
-        return request_1["default"]('GET', url, {}, null, 'text', callback);
+        return request_1["default"]('GET', url, __assign({}, this.headers), null, 'text', callback);
     },
     PROPFIND: function (url, callback) {
-        return new Promise(function (resolve, reject) { return request_1["default"]('PROPFIND', url, { Depth: "1" }, null, 'xml', function (err, xmlString) {
+        var _this = this;
+        return new Promise(function (resolve, reject) { return request_1["default"]('PROPFIND', url, __assign(__assign({}, _this.headers), { Depth: "1" }), null, 'xml', function (err, xmlString) {
             var _a, _b;
             if (err) {
                 reject(err);
@@ -368,19 +470,19 @@ exports["default"] = {
         }); });
     },
     MKCOL: function (url, callback) {
-        return request_1["default"]('MKCOL', url, {}, null, 'text', callback);
+        return request_1["default"]('MKCOL', url, __assign({}, this.headers), null, 'text', callback);
     },
     DELETE: function (url, callback) {
-        return request_1["default"]('DELETE', url, {}, null, 'text', callback);
+        return request_1["default"]('DELETE', url, __assign({}, this.headers), null, 'text', callback);
     },
     PUT: function (url, data, callback) {
-        return request_1["default"]('PUT', url, {}, data, 'text', callback);
+        return request_1["default"]('PUT', url, __assign({}, this.headers), data, 'text', callback);
     }
 };
 
 
 /***/ }),
-/* 8 */
+/* 9 */
 /***/ (function(module, exports, __webpack_require__) {
 
 // ==ClosureCompiler==
@@ -759,7 +861,7 @@ tXml.parseStream = function(stream, offset) {
         offset = offset.length + 2;
     }
     if (typeof stream === 'string') {
-        var fs = __webpack_require__(9);
+        var fs = __webpack_require__(10);
         stream = fs.createReadStream(stream, { start: offset });
         offset = 0;
     }
@@ -801,7 +903,7 @@ tXml.parseStream = function(stream, offset) {
 
 tXml.transformStream = function (offset) {
     // require through here, so it will not get added to webpack/browserify
-    const through2 = __webpack_require__(10);
+    const through2 = __webpack_require__(11);
     if (typeof offset === 'string') {
         offset = offset.length + 2;
     }
@@ -871,31 +973,35 @@ console.log("MILLISECONDS",end2-start2);
 
 
 /***/ }),
-/* 9 */
+/* 10 */
 /***/ (function(module, exports) {
 
 module.exports = fs;
 
 /***/ }),
-/* 10 */
+/* 11 */
 /***/ (function(module, exports) {
 
 module.exports = through2;
 
 /***/ }),
-/* 11 */
+/* 12 */
 /***/ (function(module, exports, __webpack_require__) {
 
 "use strict";
 
 exports.__esModule = true;
-var fetch_1 = __webpack_require__(12);
-var xhr_1 = __webpack_require__(13);
+exports.HTTP = void 0;
+exports.HTTP = {
+    OK: 200
+};
+var fetch_1 = __webpack_require__(13);
+var xhr_1 = __webpack_require__(14);
 exports["default"] = typeof XMLHttpRequest === 'undefined' ? fetch_1["default"] : xhr_1["default"];
 
 
 /***/ }),
-/* 12 */
+/* 13 */
 /***/ (function(module, exports, __webpack_require__) {
 
 "use strict";
@@ -911,15 +1017,64 @@ var __assign = (this && this.__assign) || function () {
     };
     return __assign.apply(this, arguments);
 };
+var __awaiter = (this && this.__awaiter) || function (thisArg, _arguments, P, generator) {
+    function adopt(value) { return value instanceof P ? value : new P(function (resolve) { resolve(value); }); }
+    return new (P || (P = Promise))(function (resolve, reject) {
+        function fulfilled(value) { try { step(generator.next(value)); } catch (e) { reject(e); } }
+        function rejected(value) { try { step(generator["throw"](value)); } catch (e) { reject(e); } }
+        function step(result) { result.done ? resolve(result.value) : adopt(result.value).then(fulfilled, rejected); }
+        step((generator = generator.apply(thisArg, _arguments || [])).next());
+    });
+};
+var __generator = (this && this.__generator) || function (thisArg, body) {
+    var _ = { label: 0, sent: function() { if (t[0] & 1) throw t[1]; return t[1]; }, trys: [], ops: [] }, f, y, t, g;
+    return g = { next: verb(0), "throw": verb(1), "return": verb(2) }, typeof Symbol === "function" && (g[Symbol.iterator] = function() { return this; }), g;
+    function verb(n) { return function (v) { return step([n, v]); }; }
+    function step(op) {
+        if (f) throw new TypeError("Generator is already executing.");
+        while (_) try {
+            if (f = 1, y && (t = op[0] & 2 ? y["return"] : op[0] ? y["throw"] || ((t = y["return"]) && t.call(y), 0) : y.next) && !(t = t.call(y, op[1])).done) return t;
+            if (y = 0, t) op = [op[0] & 2, t.value];
+            switch (op[0]) {
+                case 0: case 1: t = op; break;
+                case 4: _.label++; return { value: op[1], done: false };
+                case 5: _.label++; y = op[1]; op = [0]; continue;
+                case 7: op = _.ops.pop(); _.trys.pop(); continue;
+                default:
+                    if (!(t = _.trys, t = t.length > 0 && t[t.length - 1]) && (op[0] === 6 || op[0] === 2)) { _ = 0; continue; }
+                    if (op[0] === 3 && (!t || (op[1] > t[0] && op[1] < t[3]))) { _.label = op[1]; break; }
+                    if (op[0] === 6 && _.label < t[1]) { _.label = t[1]; t = op; break; }
+                    if (t && _.label < t[2]) { _.label = t[2]; _.ops.push(op); break; }
+                    if (t[2]) _.ops.pop();
+                    _.trys.pop(); continue;
+            }
+            op = body.call(thisArg, _);
+        } catch (e) { op = [6, e]; y = 0; } finally { f = t = 0; }
+        if (op[0] & 5) throw op[1]; return { value: op[0] ? op[1] : void 0, done: true };
+    }
+};
 exports.__esModule = true;
+var _1 = __webpack_require__(12);
 function default_1(verb, url, headers, body, type, callback) {
+    var _this = this;
     return fetch(url, {
         mode: 'cors',
         method: verb,
         headers: __assign({ 'Content-Type': 'text/xml; charset=UTF-8' }, headers),
         body: body
     })
-        .then(function (r) { return r.text(); })
+        .then(function (r) { return __awaiter(_this, void 0, void 0, function () {
+        return __generator(this, function (_a) {
+            switch (_a.label) {
+                case 0:
+                    if (Math.floor(r.status / _1.HTTP.OK) > 1) {
+                        throw Object.assign(new Error(r.statusText), { status: r.status });
+                    }
+                    return [4 /*yield*/, r.text()];
+                case 1: return [2 /*return*/, _a.sent()];
+            }
+        });
+    }); })
         .then(function (text) {
         var returnValue = text;
         if (callback) {
@@ -927,37 +1082,25 @@ function default_1(verb, url, headers, body, type, callback) {
         }
         return returnValue;
     }, function (err) {
-        console.error(err);
-        console.error(err.stack);
         callback && callback(err);
+        throw err;
     });
 }
 exports["default"] = default_1;
 
 
 /***/ }),
-/* 13 */
+/* 14 */
 /***/ (function(module, exports, __webpack_require__) {
 
 "use strict";
 
 exports.__esModule = true;
+var _1 = __webpack_require__(12);
 function default_1(verb, url, headers, data, type, callback) {
     var xhr = new XMLHttpRequest();
     var body = function () {
-        var b = xhr.responseText;
-        // if (type == 'xml') {
-        //     var xml = xhr.responseXML;
-        //     if (!xml) {
-        //         return
-        //         const parser = new DOMParser();
-        //         xml = parser.parseFromString(b, 'text/xml');
-        //     }
-        //     if (xml) {
-        //         b = xml.firstChild.nextSibling ? xml.firstChild.nextSibling : xml.firstChild;
-        //     }
-        // }
-        return b;
+        return xhr.responseText;
     };
     var promise;
     var resolvePromise, rejectPromise;
@@ -967,6 +1110,11 @@ function default_1(verb, url, headers, data, type, callback) {
     });
     xhr.onreadystatechange = function () {
         if (xhr.readyState == 4) { // complete.
+            if (Math.floor(xhr.status / _1.HTTP.OK) > 1) {
+                var err = Object.assign(new Error(xhr.statusText), { status: xhr.status });
+                rejectPromise(err);
+                return callback(err);
+            }
             var b = body();
             callback && callback(null, b);
             resolvePromise(b);

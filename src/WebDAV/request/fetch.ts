@@ -1,3 +1,5 @@
+import { HTTP } from '.';
+
 export default function (verb, url, headers, body, type: 'text' | 'xml', callback) {
     return fetch(url, {
         mode: 'cors',
@@ -8,7 +10,14 @@ export default function (verb, url, headers, body, type: 'text' | 'xml', callbac
         },
         body
     })
-        .then(r => r.text())
+        .then(async r => {
+
+            if (Math.floor(r.status / HTTP.OK) > 1) {
+                throw Object.assign(new Error(r.statusText), { status: r.status })
+            }
+
+            return await r.text();
+        })
         .then(text => {
             const returnValue = text;
 
@@ -18,8 +27,8 @@ export default function (verb, url, headers, body, type: 'text' | 'xml', callbac
 
             return returnValue;
         },  err => {
-            console.error(err);
-            console.error(err.stack);
             callback && callback(err);
+
+            throw err;
         });
 }

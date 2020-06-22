@@ -1,23 +1,9 @@
+import { HTTP } from '.';
+
 export default function (verb, url, headers, data, type, callback) {
     var xhr = new XMLHttpRequest();
     var body = function () {
-        var b: any = xhr.responseText;
-        // if (type == 'xml') {
-        //     var xml = xhr.responseXML;
-
-        //     if (!xml) {
-
-        //         return
-        //         const parser = new DOMParser();
-        //         xml = parser.parseFromString(b, 'text/xml');
-        //     }
-
-        //     if (xml) {
-        //         b = xml.firstChild.nextSibling ? xml.firstChild.nextSibling : xml.firstChild;
-        //     }
-        // }
-
-        return b;
+        return xhr.responseText;
     };
 
     let promise;
@@ -30,6 +16,13 @@ export default function (verb, url, headers, data, type, callback) {
 
     xhr.onreadystatechange = function () {
         if (xhr.readyState == 4) { // complete.
+            if (Math.floor(xhr.status / HTTP.OK) > 1) {
+                const err = Object.assign(new Error(xhr.statusText), { status: xhr.status })
+                
+                rejectPromise(err);
+                return callback(err);
+            }
+
             var b = body();
 
             callback && callback(null, b);
