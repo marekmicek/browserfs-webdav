@@ -1060,17 +1060,26 @@ function default_1(verb, url, headers, body, type, callback) {
     return fetch(url, {
         mode: 'cors',
         method: verb,
-        headers: __assign({ 'Content-Type': 'text/xml; charset=UTF-8' }, headers),
+        headers: __assign({ 'Content-Type': 'application/octet-stream' }, headers),
         body: body
     })
         .then(function (r) { return __awaiter(_this, void 0, void 0, function () {
+        var outputAs, contentType;
         return __generator(this, function (_a) {
             switch (_a.label) {
                 case 0:
                     if (Math.floor(r.status / _1.HTTP.OK) > 1) {
                         throw Object.assign(new Error(r.statusText), { status: r.status });
                     }
-                    return [4 /*yield*/, r.text()];
+                    outputAs = 'arrayBuffer';
+                    contentType = r.headers.get('Content-Type').split(';')[0];
+                    switch (contentType) {
+                        case 'application/xml':
+                        case 'application/json':
+                            outputAs = 'text';
+                            break;
+                    }
+                    return [4 /*yield*/, r[outputAs]()];
                 case 1: return [2 /*return*/, _a.sent()];
             }
         });
@@ -1121,7 +1130,7 @@ function default_1(verb, url, headers, data, type, callback) {
         }
     };
     xhr.open(verb, url, true);
-    xhr.setRequestHeader('Content-Type', 'text/xml; charset=UTF-8');
+    xhr.setRequestHeader('Content-Type', 'application/octet-stream');
     for (var header in headers) {
         xhr.setRequestHeader(header, headers[header]);
     }

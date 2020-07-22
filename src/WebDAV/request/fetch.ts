@@ -5,7 +5,7 @@ export default function (verb, url, headers, body, type: 'text' | 'xml', callbac
         mode: 'cors',
         method: verb,
         headers: {
-            'Content-Type': 'text/xml; charset=UTF-8',
+            'Content-Type': 'application/octet-stream',
             ...headers,
         },
         body
@@ -16,7 +16,17 @@ export default function (verb, url, headers, body, type: 'text' | 'xml', callbac
                 throw Object.assign(new Error(r.statusText), { status: r.status })
             }
 
-            return await r.text();
+            let outputAs = 'arrayBuffer';
+
+            const contentType = r.headers.get('Content-Type').split(';')[0];
+            switch (contentType) {
+                case 'application/xml':
+                case 'application/json':
+                    outputAs = 'text';
+                    break;
+            }
+
+            return await r[outputAs]();
         })
         .then(text => {
             const returnValue = text;
@@ -26,7 +36,7 @@ export default function (verb, url, headers, body, type: 'text' | 'xml', callbac
             }
 
             return returnValue;
-        },  err => {
+        }, err => {
             callback && callback(err);
 
             throw err;

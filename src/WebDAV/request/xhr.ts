@@ -31,7 +31,7 @@ export default function (verb, url, headers, data, type, callback) {
     };
 
     xhr.open(verb, url, true);
-    xhr.setRequestHeader('Content-Type', 'text/xml; charset=UTF-8');
+    xhr.setRequestHeader('Content-Type', 'application/octet-stream');
 
     for (var header in headers) {
         xhr.setRequestHeader(header, headers[header]);
