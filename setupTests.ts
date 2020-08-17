@@ -12,8 +12,15 @@ const createFiles = server => {
         'file0.txt': webdav.ResourceType.File       // /file0.txt
     });
 };
+const NodeBuffer = Buffer;
+const fetch = require('node-fetch');
+
+globalThis.fetch = fetch;
 
 beforeAll(async () => {
+    // XXX node-fetch won't work correctly without it (webpack polyfill has been added and http returns native Buffer)
+    (globalThis as any).Buffer = NodeBuffer;
+
     // run webdav server
     await server.startAsync(port);
 
@@ -21,7 +28,6 @@ beforeAll(async () => {
 
     console.log(`WebDAV server is listening on port ${port}`);
 });
-
 
 afterAll(async () => {
     await server.stopAsync();

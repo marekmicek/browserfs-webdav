@@ -1,11 +1,10 @@
 import * as BrowserFS from 'browserfs';
 import { XMLHttpRequest } from 'xmlhttprequest';
 
-import fetch from 'node-fetch';
+declare const window;
 
 window.XMLHttpRequest = XMLHttpRequest;
 window.BrowserFS = BrowserFS;
-window.fetch = fetch;
 
 import '..';
 
@@ -29,6 +28,7 @@ it('should allow to use BrowserFS.configure', async () => {
 
 it('should read the file', async () => {
     const expected = 'TEST CONTENT';
+    debugger
     const actual = await promisify(fs.readFile)('/folder1/file1.txt');
 
     expect(actual).toBe(expected);

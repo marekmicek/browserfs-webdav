@@ -1,3 +1,7 @@
+declare const btoa;
+declare const ha1Compute;
+declare const md5;
+
 export function generateBasicAuthHeader(username, password) {
   const encoded = btoa(`${username}:${password}`);
   return `Basic ${encoded}`;

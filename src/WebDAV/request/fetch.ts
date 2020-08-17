@@ -1,5 +1,7 @@
 import { HTTP } from '.';
 
+declare const fetch;
+
 export default function (verb, url, headers, body, type: 'text' | 'xml', callback) {
     return fetch(url, {
         mode: 'cors',
@@ -18,8 +20,9 @@ export default function (verb, url, headers, body, type: 'text' | 'xml', callbac
 
             let outputAs = 'arrayBuffer';
 
-            const contentType = r.headers.get('Content-Type').split(';')[0];
+            const contentType = r.headers.get('Content-Type')?.split(';')[0];
             switch (contentType) {
+                case 'text/plain':
                 case 'application/xml':
                 case 'application/json':
                     outputAs = 'text';

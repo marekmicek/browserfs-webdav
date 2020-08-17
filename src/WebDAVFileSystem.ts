@@ -52,6 +52,8 @@ const mapHttpErrorCallback = cb => (err, data) => {
     cb(err, data);
 };
 
+declare const document;
+
 export default class WebDAVFileSystem extends BaseFileSystem implements FileSystem {
     headers = {};
 

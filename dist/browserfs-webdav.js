@@ -361,58 +361,57 @@ exports["default"] = Stats;
 
 /***/ }),
 /* 6 */
-/***/ (function(module, __webpack_exports__, __webpack_require__) {
+/***/ (function(module, exports, __webpack_require__) {
 
 "use strict";
-__webpack_require__.r(__webpack_exports__);
-/* harmony export (binding) */ __webpack_require__.d(__webpack_exports__, "generateBasicAuthHeader", function() { return generateBasicAuthHeader; });
-/* harmony export (binding) */ __webpack_require__.d(__webpack_exports__, "generateDigestAuthHeader", function() { return generateDigestAuthHeader; });
-/* harmony export (binding) */ __webpack_require__.d(__webpack_exports__, "generateTokenAuthHeader", function() { return generateTokenAuthHeader; });
+
+exports.__esModule = true;
+exports.generateTokenAuthHeader = exports.generateDigestAuthHeader = exports.generateBasicAuthHeader = void 0;
 function generateBasicAuthHeader(username, password) {
-  const encoded = btoa(`${username}:${password}`);
-  return `Basic ${encoded}`;
+    var encoded = btoa(username + ":" + password);
+    return "Basic " + encoded;
 }
-
+exports.generateBasicAuthHeader = generateBasicAuthHeader;
 function generateDigestAuthHeader(options, digest) {
-  const url = options.url.replace("//", "");
-  const uri = url.indexOf("/") == -1 ? "/" : url.slice(url.indexOf("/"));
-  const method = options.method ? options.method.toUpperCase() : "GET";
-  const qop = /(^|,)\s*auth\s*($|,)/.test(digest.qop) ? "auth" : false;
-  const ncString = `00000000${digest.nc}`.slice(-8);
-  const cnonce = digest.cnonce;
-  const ha1 = ha1Compute(digest.algorithm, digest.username, digest.realm, digest.password, digest.nonce, digest.cnonce);
-  const ha2 = md5(`${method}:${uri}`);
-  const digestResponse = qop ? md5(`${ha1}:${digest.nonce}:${ncString}:${digest.cnonce}:${qop}:${ha2}`) : md5(`${ha1}:${digest.nonce}:${ha2}`);
-  const authValues = {
-    username: digest.username,
-    realm: digest.realm,
-    nonce: digest.nonce,
-    uri,
-    qop,
-    response: digestResponse,
-    nc: ncString,
-    cnonce: digest.cnonce,
-    algorithm: digest.algorithm,
-    opaque: digest.opaque
-  };
-  const authHeader = [];
-
-  for (var k in authValues) {
-    if (authValues[k]) {
-      if (k === "qop" || k === "nc" || k === "algorithm") {
-        authHeader.push(`${k}=${authValues[k]}`);
-      } else {
-        authHeader.push(`${k}="${authValues[k]}"`);
-      }
+    var url = options.url.replace("//", "");
+    var uri = url.indexOf("/") == -1 ? "/" : url.slice(url.indexOf("/"));
+    var method = options.method ? options.method.toUpperCase() : "GET";
+    var qop = /(^|,)\s*auth\s*($|,)/.test(digest.qop) ? "auth" : false;
+    var ncString = ("00000000" + digest.nc).slice(-8);
+    var cnonce = digest.cnonce;
+    var ha1 = ha1Compute(digest.algorithm, digest.username, digest.realm, digest.password, digest.nonce, digest.cnonce);
+    var ha2 = md5(method + ":" + uri);
+    var digestResponse = qop ? md5(ha1 + ":" + digest.nonce + ":" + ncString + ":" + digest.cnonce + ":" + qop + ":" + ha2) : md5(ha1 + ":" + digest.nonce + ":" + ha2);
+    var authValues = {
+        username: digest.username,
+        realm: digest.realm,
+        nonce: digest.nonce,
+        uri: uri,
+        qop: qop,
+        response: digestResponse,
+        nc: ncString,
+        cnonce: digest.cnonce,
+        algorithm: digest.algorithm,
+        opaque: digest.opaque
+    };
+    var authHeader = [];
+    for (var k in authValues) {
+        if (authValues[k]) {
+            if (k === "qop" || k === "nc" || k === "algorithm") {
+                authHeader.push(k + "=" + authValues[k]);
+            }
+            else {
+                authHeader.push(k + "=\"" + authValues[k] + "\"");
+            }
+        }
     }
-  }
-
-  return `Digest ${authHeader.join(", ")}`;
+    return "Digest " + authHeader.join(", ");
 }
-
+exports.generateDigestAuthHeader = generateDigestAuthHeader;
 function generateTokenAuthHeader(tokenInfo) {
-  return `${tokenInfo.token_type} ${tokenInfo.access_token}`;
+    return tokenInfo.token_type + " " + tokenInfo.access_token;
 }
+exports.generateTokenAuthHeader = generateTokenAuthHeader;
 
 
 /***/ }),
@@ -996,8 +995,7 @@ exports.HTTP = {
     OK: 200
 };
 var fetch_1 = __webpack_require__(13);
-var xhr_1 = __webpack_require__(14);
-exports["default"] = typeof XMLHttpRequest === 'undefined' ? fetch_1["default"] : xhr_1["default"];
+exports["default"] = fetch_1["default"];
 
 
 /***/ }),
@@ -1065,22 +1063,24 @@ function default_1(verb, url, headers, body, type, callback) {
     })
         .then(function (r) { return __awaiter(_this, void 0, void 0, function () {
         var outputAs, contentType;
-        return __generator(this, function (_a) {
-            switch (_a.label) {
+        var _a;
+        return __generator(this, function (_b) {
+            switch (_b.label) {
                 case 0:
                     if (Math.floor(r.status / _1.HTTP.OK) > 1) {
                         throw Object.assign(new Error(r.statusText), { status: r.status });
                     }
                     outputAs = 'arrayBuffer';
-                    contentType = r.headers.get('Content-Type').split(';')[0];
+                    contentType = (_a = r.headers.get('Content-Type')) === null || _a === void 0 ? void 0 : _a.split(';')[0];
                     switch (contentType) {
+                        case 'text/plain':
                         case 'application/xml':
                         case 'application/json':
                             outputAs = 'text';
                             break;
                     }
                     return [4 /*yield*/, r[outputAs]()];
-                case 1: return [2 /*return*/, _a.sent()];
+                case 1: return [2 /*return*/, _b.sent()];
             }
         });
     }); })
@@ -1094,48 +1094,6 @@ function default_1(verb, url, headers, body, type, callback) {
         callback && callback(err);
         throw err;
     });
-}
-exports["default"] = default_1;
-
-
-/***/ }),
-/* 14 */
-/***/ (function(module, exports, __webpack_require__) {
-
-"use strict";
-
-exports.__esModule = true;
-var _1 = __webpack_require__(12);
-function default_1(verb, url, headers, data, type, callback) {
-    var xhr = new XMLHttpRequest();
-    var body = function () {
-        return xhr.responseText;
-    };
-    var promise;
-    var resolvePromise, rejectPromise;
-    promise = new Promise(function (resolve, reject) {
-        resolvePromise = resolve;
-        rejectPromise = reject;
-    });
-    xhr.onreadystatechange = function () {
-        if (xhr.readyState == 4) { // complete.
-            if (Math.floor(xhr.status / _1.HTTP.OK) > 1) {
-                var err = Object.assign(new Error(xhr.statusText), { status: xhr.status });
-                rejectPromise(err);
-                return callback(err);
-            }
-            var b = body();
-            callback && callback(null, b);
-            resolvePromise(b);
-        }
-    };
-    xhr.open(verb, url, true);
-    xhr.setRequestHeader('Content-Type', 'application/octet-stream');
-    for (var header in headers) {
-        xhr.setRequestHeader(header, headers[header]);
-    }
-    xhr.send(data);
-    return promise;
 }
 exports["default"] = default_1;
 

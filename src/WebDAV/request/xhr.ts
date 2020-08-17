@@ -1,5 +1,7 @@
 import { HTTP } from '.';
 
+declare const XMLHttpRequest;
+
 export default function (verb, url, headers, data, type, callback) {
     var xhr = new XMLHttpRequest();
     var body = function () {
