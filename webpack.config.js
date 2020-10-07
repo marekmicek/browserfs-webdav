@@ -1,7 +1,7 @@
 const path = require('path');
 const TerserPlugin = require('terser-webpack-plugin');
 
-module.exports = {
+const createConfig = () => ({
     mode: 'none',
     entry: {
         'browserfs-webdav': './src/index.ts',
@@ -29,4 +29,23 @@ module.exports = {
         'fs': 'fs',
         'through2': 'through2'
     }
-}
+})
+
+const bundle = createConfig();
+
+const EsmWebpackPlugin = require('@purtuga/esm-webpack-plugin');
+const esmBundle = {
+    ...createConfig(),
+    entry: {
+        'browserfs-webdav.esm': './src/index.ts',
+    },
+    output: {
+        library: 'BrowserFSWebDAV',
+        libraryTarget: 'var'
+    },
+    plugins: [
+        new EsmWebpackPlugin()
+    ]
+};
+
+module.exports = [bundle, esmBundle];

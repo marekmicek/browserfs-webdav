@@ -1,3 +1,4 @@
+var BrowserFSWebDAV =
 /******/ (function(modules) { // webpackBootstrap
 /******/ 	// The module cache
 /******/ 	var installedModules = {};
@@ -1109,3 +1110,11 @@ var __generator = (undefined && undefined.__generator) || function (thisArg, bod
 
 /***/ })
 /******/ ]);
+
+
+BrowserFSWebDAV === undefined && console.error('esm-webpack-plugin: nothing exported!');
+const _BrowserFSWebDAV$WebDAVFileSystem = BrowserFSWebDAV['WebDAVFileSystem'];
+
+export {
+    _BrowserFSWebDAV$WebDAVFileSystem as WebDAVFileSystem
+}
