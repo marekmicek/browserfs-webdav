@@ -25,11 +25,11 @@
     "node-fetch": "^2.6.0",
     "terser-webpack-plugin": "^3.0.6",
     "ts-jest": "^26.1.0",
-    "ts-loader": "^7.0.5",
+    "ts-loader": "^9.4.2",
     "typescript": "^3.9.5",
     "uglifyjs-webpack-plugin": "^2.2.0",
     "webdav-server": "^2.6.2",
-    "webpack": "^4.43.0",
+    "webpack": "^5.75.0",
     "xmlhttprequest": "^1.8.0"
   }
 }
